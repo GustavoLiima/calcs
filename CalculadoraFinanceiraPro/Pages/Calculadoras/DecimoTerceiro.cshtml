@@ -1,0 +1,363 @@
+@page
+@model CalculadoraFinanceiraPro.Pages.Calculadoras.DecimoTerceiroModel
+@{
+    ViewData["Title"] = "Calculadora de 13º Salário";
+    ViewData["Description"] = "Calcule seu 13º salário (gratificação natalina) com descontos de INSS e IRRF. Ferramenta precisa e atualizada.";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="calculator-card">
+                <div class="calculator-header">
+                    <i class="fas fa-gift"></i>
+                    <div>
+                        <h1>Calculadora de 13º Salário</h1>
+                        <p>Calcule sua gratificação natalina com precisão, incluindo todos os descontos</p>
+                    </div>
+                </div>
+
+                <form method="post" id="decimo-form">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Salário Bruto (R$)</label>
+                            <input type="text" class="form-control money-input" asp-for="SalarioBruto" 
+                                   placeholder="Ex: 3.500,00" required>
+                            <span asp-validation-for="SalarioBruto" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Meses Trabalhados</label>
+                            <select class="form-select" asp-for="MesesTrabalhados" required>
+                                <option value="">Selecione os meses</option>
+                                <option value="1">1 mês</option>
+                                <option value="2">2 meses</option>
+                                <option value="3">3 meses</option>
+                                <option value="4">4 meses</option>
+                                <option value="5">5 meses</option>
+                                <option value="6">6 meses</option>
+                                <option value="7">7 meses</option>
+                                <option value="8">8 meses</option>
+                                <option value="9">9 meses</option>
+                                <option value="10">10 meses</option>
+                                <option value="11">11 meses</option>
+                                <option value="12">12 meses (ano completo)</option>
+                            </select>
+                            <span asp-validation-for="MesesTrabalhados" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Número de Dependentes</label>
+                            <input type="number" class="form-control" asp-for="Dependentes" 
+                                   min="0" max="20" placeholder="0">
+                            <div class="form-text">
+                                <small>Para cálculo do IRRF</small>
+                            </div>
+                            <span asp-validation-for="Dependentes" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Média de Horas Extras Mensais</label>
+                            <input type="text" class="form-control money-input" asp-for="MediaHorasExtras" 
+                                   placeholder="0,00">
+                            <div class="form-text">
+                                <small>Valor médio mensal (opcional)</small>
+                            </div>
+                            <span asp-validation-for="MediaHorasExtras" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Média de Comissões Mensais</label>
+                            <input type="text" class="form-control money-input" asp-for="MediaComissoes" 
+                                   placeholder="0,00">
+                            <div class="form-text">
+                                <small>Valor médio mensal (opcional)</small>
+                            </div>
+                            <span asp-validation-for="MediaComissoes" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Adiantamento Recebido</label>
+                            <input type="text" class="form-control money-input" asp-for="Adiantamento" 
+                                   placeholder="0,00">
+                            <div class="form-text">
+                                <small>Valor já recebido em novembro</small>
+                            </div>
+                            <span asp-validation-for="Adiantamento" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-calculate">
+                                <i class="fas fa-calculator"></i>
+                                Calcular 13º Salário
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                @if (Model.CalculoRealizado)
+                {
+                    <div class="results-section mt-4">
+                        <h3><i class="fas fa-chart-line text-success"></i> Resultado do 13º Salário</h3>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-money-bill text-primary"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">13º Bruto</div>
+                                        <div class="result-value">@Model.DecimoTerceiroBruto.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="result-card highlight">
+                                    <div class="result-icon">
+                                        <i class="fas fa-hand-holding-usd text-success"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">13º Líquido</div>
+                                        <div class="result-value text-success">@Model.DecimoTerceiroLiquido.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-minus-circle text-warning"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Desconto INSS</div>
+                                        <div class="result-value">@Model.DescontoINSS.ToString("C")</div>
+                                        <div class="result-detail">@Model.AliquotaINSS.ToString("N2")%</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-receipt text-danger"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Desconto IRRF</div>
+                                        <div class="result-value">@Model.DescontoIRRF.ToString("C")</div>
+                                        <div class="result-detail">@Model.AliquotaIRRF.ToString("N2")%</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (Model.Adiantamento > 0)
+                            {
+                                <div class="col-md-6">
+                                    <div class="result-card">
+                                        <div class="result-icon">
+                                            <i class="fas fa-arrow-down text-info"></i>
+                                        </div>
+                                        <div class="result-content">
+                                            <div class="result-label">Adiantamento</div>
+                                            <div class="result-value">@Model.Adiantamento.ToString("C")</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="result-card highlight">
+                                        <div class="result-icon">
+                                            <i class="fas fa-coins text-success"></i>
+                                        </div>
+                                        <div class="result-content">
+                                            <div class="result-label">Valor a Receber</div>
+                                            <div class="result-value text-success">@Model.ValorAReceber.ToString("C")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="col-12">
+                                <div class="summary-card">
+                                    <h5>Detalhamento do Cálculo</h5>
+                                    <div class="summary-grid">
+                                        <div class="summary-item">
+                                            <span>Salário Base:</span>
+                                            <strong>@Model.SalarioBruto.ToString("C")</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Meses Trabalhados:</span>
+                                            <strong>@Model.MesesTrabalhados meses</strong>
+                                        </div>
+                                        @if (Model.MediaHorasExtras > 0)
+                                        {
+                                            <div class="summary-item">
+                                                <span>Média Horas Extras:</span>
+                                                <strong>@Model.MediaHorasExtras.ToString("C")</strong>
+                                            </div>
+                                        }
+                                        @if (Model.MediaComissoes > 0)
+                                        {
+                                            <div class="summary-item">
+                                                <span>Média Comissões:</span>
+                                                <strong>@Model.MediaComissoes.ToString("C")</strong>
+                                            </div>
+                                        }
+                                        <div class="summary-item">
+                                            <span>Dependentes:</span>
+                                            <strong>@Model.Dependentes</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Total de Descontos:</span>
+                                            <strong>@((Model.DescontoINSS + Model.DescontoIRRF).ToString("C"))</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="sidebar">
+                <div class="info-card">
+                    <h4><i class="fas fa-info-circle text-info"></i> Como Funciona o 13º</h4>
+                    <ul>
+                        <li><strong>Valor:</strong> 1/12 do salário por mês trabalhado</li>
+                        <li><strong>Prazo:</strong> Até 20 de dezembro</li>
+                        <li><strong>Primeira parcela:</strong> Entre fev-nov (sem descontos)</li>
+                        <li><strong>Segunda parcela:</strong> Dezembro (com descontos)</li>
+                        <li><strong>Faltas:</strong> Mais de 15 faltas no mês não conta</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4><i class="fas fa-calendar-alt text-warning"></i> Prazos Legais</h4>
+                    <div class="rate-comparison">
+                        <div class="rate-item">
+                            <span>1ª Parcela</span>
+                            <strong>Até 30/11</strong>
+                        </div>
+                        <div class="rate-item">
+                            <span>2ª Parcela</span>
+                            <strong>Até 20/12</strong>
+                        </div>
+                        <div class="rate-item">
+                            <span>Férias</span>
+                            <strong>Junto com férias</strong>
+                        </div>
+                        <div class="rate-item">
+                            <span>Rescisão</span>
+                            <strong>Proporcional</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h4><i class="fas fa-calculator text-success"></i> Base de Cálculo</h4>
+                    <ul>
+                        <li>Salário fixo</li>
+                        <li>Média das comissões</li>
+                        <li>Média das horas extras</li>
+                        <li>Adicionais habituais</li>
+                        <li>Média das gratificações</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4><i class="fas fa-lightbulb text-warning"></i> Dicas Importantes</h4>
+                    <ul>
+                        <li>15 dias de trabalho = mês completo</li>
+                        <li>Aposentados e pensionistas têm direito</li>
+                        <li>Trabalhador doméstico tem direito</li>
+                        <li>Descontos incidem apenas na 2ª parcela</li>
+                        <li>Atraso gera multa de 50% + juros</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Formatação de moeda
+    const moneyInputs = document.querySelectorAll('.money-input');
+    moneyInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = (value / 100).toFixed(2) + '';
+            value = value.replace(".", ",");
+            value = value.replace(/(\d)(?=(\d{3})+,)/g, "$1.");
+            e.target.value = value;
+        });
+    });
+
+    // Cálculo automático da primeira parcela
+    const salarioInput = document.querySelector('[name="SalarioBruto"]');
+    const mesesSelect = document.querySelector('[name="MesesTrabalhados"]');
+    const primeiraParcelaDisplay = document.createElement('div');
+    primeiraParcelaDisplay.className = 'alert alert-info mt-2';
+    primeiraParcelaDisplay.style.display = 'none';
+
+    if (salarioInput && mesesSelect) {
+        salarioInput.parentNode.appendChild(primeiraParcelaDisplay);
+
+        function updatePrimeiraParcela() {
+            const salario = parseFloat(salarioInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+            const meses = parseInt(mesesSelect.value) || 0;
+            
+            if (salario > 0 && meses > 0) {
+                const primeiraParcela = (salario * meses / 12) / 2;
+                primeiraParcelaDisplay.innerHTML = `
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>Primeira parcela (sem descontos):</strong> ${primeiraParcela.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}
+                `;
+                primeiraParcelaDisplay.style.display = 'block';
+            } else {
+                primeiraParcelaDisplay.style.display = 'none';
+            }
+        }
+
+        salarioInput.addEventListener('input', updatePrimeiraParcela);
+        mesesSelect.addEventListener('change', updatePrimeiraParcela);
+    }
+
+    // Validação de meses trabalhados vs período no ano
+    mesesSelect?.addEventListener('change', function() {
+        const meses = parseInt(this.value);
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth() + 1;
+        
+        if (meses > mesAtual) {
+            showAlert('warning', `Atenção: Você selecionou ${meses} meses, mas estamos no mês ${mesAtual}. Verifique se está correto.`);
+        }
+    });
+
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const form = document.getElementById('decimo-form');
+        const existingAlert = form.querySelector('.alert-warning, .alert-danger');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        form.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 8000);
+    }
+});
+</script>

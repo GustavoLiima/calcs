@@ -1,0 +1,276 @@
+@page
+@model CalculadoraFinanceiraPro.Pages.Calculadoras.EmprestimoPessoalModel
+@{
+    ViewData["Title"] = "Calculadora de Empréstimo Pessoal";
+    ViewData["Description"] = "Calcule as parcelas, juros e CET do seu empréstimo pessoal. Simule diferentes valores e prazos para encontrar a melhor opção.";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="calculator-card">
+                <div class="calculator-header">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <div>
+                        <h1>Calculadora de Empréstimo Pessoal</h1>
+                        <p>Simule seu empréstimo pessoal e compare as melhores condições do mercado</p>
+                    </div>
+                </div>
+
+                <form method="post" id="emprestimo-form">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Valor do Empréstimo (R$)</label>
+                            <input type="text" class="form-control money-input" asp-for="ValorEmprestimo" 
+                                   placeholder="Ex: 50.000,00" required>
+                            <span asp-validation-for="ValorEmprestimo" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Prazo (meses)</label>
+                            <select class="form-select" asp-for="PrazoMeses" required>
+                                <option value="">Selecione o prazo</option>
+                                <option value="6">6 meses</option>
+                                <option value="12">12 meses</option>
+                                <option value="18">18 meses</option>
+                                <option value="24">24 meses</option>
+                                <option value="36">36 meses</option>
+                                <option value="48">48 meses</option>
+                                <option value="60">60 meses</option>
+                                <option value="72">72 meses</option>
+                                <option value="84">84 meses</option>
+                            </select>
+                            <span asp-validation-for="PrazoMeses" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Taxa de Juros (% ao mês)</label>
+                            <input type="number" class="form-control" asp-for="TaxaJuros" 
+                                   min="0.1" max="25" step="0.1" placeholder="Ex: 2.5" required>
+                            <div class="form-text">
+                                <small>Taxa média atual: 5,5% a 8,9% ao mês</small>
+                            </div>
+                            <span asp-validation-for="TaxaJuros" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de Empréstimo</label>
+                            <select class="form-select" asp-for="TipoEmprestimo" required>
+                                <option value="Pessoal">Crédito Pessoal</option>
+                                <option value="Consignado">Crédito Consignado</option>
+                                <option value="CartaoCredito">Cartão de Crédito</option>
+                                <option value="CDC">CDC (Crédito Direto ao Consumidor)</option>
+                            </select>
+                            <span asp-validation-for="TipoEmprestimo" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-calculate">
+                                <i class="fas fa-calculator"></i>
+                                Calcular Empréstimo
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                @if (Model.CalculoRealizado)
+                {
+                    <div class="results-section mt-4">
+                        <h3><i class="fas fa-chart-line text-success"></i> Resultados da Simulação</h3>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-money-bill-wave text-primary"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Parcela Mensal</div>
+                                        <div class="result-value">@Model.PrestacaoMensal.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-percent text-info"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">CET (Custo Efetivo Total)</div>
+                                        <div class="result-value">@Model.CET.ToString("N2")% a.m.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-coins text-warning"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Total de Juros</div>
+                                        <div class="result-value text-warning">@Model.TotalJuros.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-calculator text-danger"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Valor Total a Pagar</div>
+                                        <div class="result-value text-danger">@Model.ValorTotal.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="summary-card">
+                                    <h5>Resumo do Empréstimo</h5>
+                                    <div class="summary-grid">
+                                        <div class="summary-item">
+                                            <span>Valor Solicitado:</span>
+                                            <strong>@Model.ValorEmprestimo.ToString("C")</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Prazo:</span>
+                                            <strong>@Model.PrazoMeses meses</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Taxa de Juros:</span>
+                                            <strong>@Model.TaxaJuros.ToString("N2")% a.m.</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Tipo:</span>
+                                            <strong>@Model.TipoEmprestimo</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>IOF:</span>
+                                            <strong>@Model.ValorIOF.ToString("C")</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Taxa Efetiva (CET):</span>
+                                            <strong>@Model.CET.ToString("N2")% a.m.</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="sidebar">
+                <div class="info-card">
+                    <h4><i class="fas fa-lightbulb text-warning"></i> Dicas Importantes</h4>
+                    <ul>
+                        <li>Compare as taxas de diferentes instituições antes de contratar</li>
+                        <li>Considere o CET (Custo Efetivo Total) para comparação real</li>
+                        <li>Evite comprometer mais de 30% da sua renda mensal</li>
+                        <li>Crédito consignado tem taxas menores que o pessoal</li>
+                        <li>Negocie sempre as condições com a instituição</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4><i class="fas fa-chart-bar text-info"></i> Taxas de Mercado</h4>
+                    <div class="rate-comparison">
+                        <div class="rate-item">
+                            <span>Crédito Consignado</span>
+                            <strong>1,5% - 2,5% a.m.</strong>
+                        </div>
+                        <div class="rate-item">
+                            <span>Crédito Pessoal</span>
+                            <strong>5,5% - 8,9% a.m.</strong>
+                        </div>
+                        <div class="rate-item">
+                            <span>Cartão de Crédito</span>
+                            <strong>12% - 15% a.m.</strong>
+                        </div>
+                        <div class="rate-item">
+                            <span>CDC</span>
+                            <strong>3,5% - 6,5% a.m.</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h4><i class="fas fa-file-contract text-success"></i> Documentos Necessários</h4>
+                    <ul>
+                        <li>CPF e RG</li>
+                        <li>Comprovante de renda</li>
+                        <li>Comprovante de residência</li>
+                        <li>Extrato bancário (últimos 3 meses)</li>
+                        <li>Declaração do IR (se aplicável)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Formatação de moeda
+    const moneyInputs = document.querySelectorAll('.money-input');
+    moneyInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = (value / 100).toFixed(2) + '';
+            value = value.replace(".", ",");
+            value = value.replace(/(\d)(?=(\d{3})+,)/g, "$1.");
+            e.target.value = value;
+        });
+    });
+
+    // Atualização automática de valores
+    const form = document.getElementById('emprestimo-form');
+    const inputs = form.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            updateRecommendations();
+        });
+    });
+
+    function updateRecommendations() {
+        const valor = parseFloat(document.querySelector('[name="ValorEmprestimo"]').value.replace(/\./g, '').replace(',', '.')) || 0;
+        const prazo = parseInt(document.querySelector('[name="PrazoMeses"]').value) || 0;
+        
+        if (valor > 100000) {
+            showAlert('info', 'Para valores altos, considere o crédito consignado que tem taxas menores.');
+        }
+        
+        if (prazo > 60) {
+            showAlert('warning', 'Prazos longos resultam em mais juros pagos. Avalie se é realmente necessário.');
+        }
+    }
+
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const existingAlert = form.querySelector('.alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        form.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>

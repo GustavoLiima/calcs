@@ -1,0 +1,467 @@
+@page "/calculadora/financiamento-veiculo"
+@model CalculadoraFinanceiraPro.Pages.Calculadoras.FinanciamentoVeiculoModel
+@{
+    ViewData["Title"] = "Simulador de Financiamento de Veículo - Financie seu Carro 2024";
+    ViewData["Description"] = "Simule o financiamento do seu carro novo ou usado. Calcule prestações, juros e CET. Compare propostas e encontre as melhores condições.";
+    ViewData["Keywords"] = "financiamento veiculo, financiamento carro, simulador veiculo, prestacao carro, financiamento automovel";
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="/Index">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Financiamento de Veículo</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-info text-white">
+                    <h1 class="h4 mb-0">
+                        <i class="bi bi-car-front-fill me-2"></i>
+                        Simulador de Financiamento de Veículo
+                    </h1>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted mb-4">
+                        Simule o financiamento do seu carro novo ou usado. Compare diferentes cenários 
+                        e encontre as melhores condições para realizar o sonho do seu veículo próprio.
+                    </p>
+
+                    <form method="post" id="veiculoForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ValorVeiculo" class="form-label">
+                                    <i class="bi bi-car-front text-info me-1"></i>
+                                    Valor do Veículo (R$)
+                                </label>
+                                <input asp-for="ValorVeiculo" class="form-control form-control-lg" 
+                                       placeholder="Ex: 45.000,00" step="0.01" min="1000"
+                                       oninput="formatCurrency(this); calculateFinancing();" />
+                                <span asp-validation-for="ValorVeiculo" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ValorEntrada" class="form-label">
+                                    <i class="bi bi-cash text-success me-1"></i>
+                                    Valor de Entrada (R$)
+                                </label>
+                                <input asp-for="ValorEntrada" class="form-control form-control-lg" 
+                                       placeholder="Ex: 10.000,00" step="0.01" min="0"
+                                       oninput="formatCurrency(this); calculateFinancing();" />
+                                <span asp-validation-for="ValorEntrada" class="text-danger"></span>
+                                <small class="form-text text-muted">Mínimo recomendado: 20% do valor</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TaxaJuros" class="form-label">
+                                    <i class="bi bi-percent text-warning me-1"></i>
+                                    Taxa de Juros Anual (%)
+                                </label>
+                                <input asp-for="TaxaJuros" class="form-control form-control-lg" 
+                                       placeholder="Ex: 15,5" step="0.1" min="0.1" max="50"
+                                       onchange="calculateFinancing();" />
+                                <span asp-validation-for="TaxaJuros" class="text-danger"></span>
+                                <small class="form-text text-muted">Taxa média atual: 15-25% a.a.</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PrazoMeses" class="form-label">
+                                    <i class="bi bi-calendar-range text-primary me-1"></i>
+                                    Prazo (Meses)
+                                </label>
+                                <select asp-for="PrazoMeses" class="form-select form-select-lg" 
+                                        onchange="calculateFinancing();">
+                                    <option value="12">12 meses (1 ano)</option>
+                                    <option value="18">18 meses</option>
+                                    <option value="24">24 meses (2 anos)</option>
+                                    <option value="30">30 meses</option>
+                                    <option value="36">36 meses (3 anos)</option>
+                                    <option value="42">42 meses</option>
+                                    <option value="48" selected>48 meses (4 anos)</option>
+                                    <option value="54">54 meses</option>
+                                    <option value="60">60 meses (5 anos)</option>
+                                    <option value="72">72 meses (6 anos)</option>
+                                </select>
+                                <span asp-validation-for="PrazoMeses" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
+                            <button type="submit" class="btn btn-info btn-lg me-md-2">
+                                <i class="bi bi-calculator me-2"></i>
+                                Simular Financiamento
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-lg" 
+                                    onclick="clearForm()">
+                                <i class="bi bi-arrow-clockwise me-2"></i>
+                                Limpar
+                            </button>
+                        </div>
+                    </form>
+
+                    @if (Model.CalculoRealizado)
+                    {
+                        <div class="result-section fade-in">
+                            <h3 class="text-center mb-4">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Simulação de Financiamento
+                            </h3>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="result-item">
+                                        <span class="result-label">Valor do Veículo</span>
+                                        <span class="result-value text-dark">
+                                            @Model.ValorVeiculo.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="result-item">
+                                        <span class="result-label">Valor de Entrada</span>
+                                        <span class="result-value text-dark">
+                                            @Model.ValorEntrada.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="result-highlight mb-4">
+                                <div class="result-label">Valor a Financiar</div>
+                                <div class="result-value">@Model.ValorFinanciado.ToString("C", new System.Globalization.CultureInfo("pt-BR"))</div>
+                            </div>
+
+                            <!-- Main Results -->
+                            <div class="row">
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card border-success">
+                                        <div class="card-header bg-success text-white text-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-credit-card me-2"></i>
+                                                Prestação Mensal
+                                            </h5>
+                                        </div>
+                                        <div class="card-body text-center">
+                                            <div class="h2 text-success mb-3">
+                                                @Model.PrestacaoMensal.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                            </div>
+                                            <p class="mb-0">
+                                                <strong>@Model.PrazoMeses parcelas</strong> de valor fixo
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card border-warning">
+                                        <div class="card-header bg-warning text-dark text-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-calculator me-2"></i>
+                                                Resumo Financeiro
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="result-item">
+                                                <span class="result-label small">Total de Juros</span>
+                                                <span class="result-value text-danger">
+                                                    @Model.TotalJuros.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                                </span>
+                                            </div>
+                                            <div class="result-item">
+                                                <span class="result-label small">Total Pago</span>
+                                                <span class="result-value text-dark">
+                                                    @Model.ValorTotalPago.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                                </span>
+                                            </div>
+                                            <div class="result-item">
+                                                <span class="result-label small">CET Aproximado</span>
+                                                <span class="result-value text-info">
+                                                    @Model.CET.ToString("F1")% a.a.
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Schedule Preview -->
+                            <div class="card border-light mb-4">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-table text-primary me-2"></i>
+                                        Resumo do Financiamento
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3 text-center mb-3">
+                                            <div class="h6 text-muted">Prazo Total</div>
+                                            <div class="h5 text-primary">@Model.PrazoMeses meses</div>
+                                            <small class="text-muted">(@(Math.Round(Model.PrazoMeses / 12.0, 1)) anos)</small>
+                                        </div>
+                                        <div class="col-md-3 text-center mb-3">
+                                            <div class="h6 text-muted">Taxa Mensal</div>
+                                            <div class="h5 text-warning">@((Model.TaxaJuros / 12).ToString("F2"))%</div>
+                                            <small class="text-muted">(@Model.TaxaJuros% a.a.)</small>
+                                        </div>
+                                        <div class="col-md-3 text-center mb-3">
+                                            <div class="h6 text-muted">% da Entrada</div>
+                                            @{
+                                                var percentEntrada = Model.ValorVeiculo > 0 ? (Model.ValorEntrada / Model.ValorVeiculo) * 100 : 0;
+                                            }
+                                            <div class="h5 text-success">@percentEntrada.ToString("F0")%</div>
+                                            <small class="text-muted">do valor total</small>
+                                        </div>
+                                        <div class="col-md-3 text-center mb-3">
+                                            <div class="h6 text-muted">Juros/Principal</div>
+                                            @{
+                                                var percentJuros = Model.ValorTotalPago > 0 ? (Model.TotalJuros / Model.ValorTotalPago) * 100 : 0;
+                                            }
+                                            <div class="h5 text-danger">@percentJuros.ToString("F0")%</div>
+                                            <small class="text-muted">são juros</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Financial Advice -->
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-lightbulb me-2"></i>Dicas Importantes</h6>
+                                <ul class="mb-0">
+                                    @if (percentEntrada < 20)
+                                    {
+                                        <li>Considere aumentar a entrada para reduzir os juros totais.</li>
+                                    }
+                                    @if (Model.PrazoMeses > 48)
+                                    {
+                                        <li>Prazos longos resultam em mais juros pagos ao longo do tempo.</li>
+                                    }
+                                    @if (percentJuros > 40)
+                                    {
+                                        <li class="text-warning">Atenção: Os juros representam uma parcela significativa do pagamento.</li>
+                                    }
+                                    <li>Compare propostas de diferentes bancos e financeiras.</li>
+                                    <li>Verifique se há seguro obrigatório incluso na simulação.</li>
+                                </ul>
+                            </div>
+
+                            <div class="mt-4 text-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Simulação com taxa de @Model.TaxaJuros% a.a. em @Model.PrazoMeses parcelas
+                                </small>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Info -->
+        <div class="col-lg-4">
+            <!-- Vehicle Types -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-car-front text-info me-2"></i>
+                        Tipos de Veículo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-success">
+                            <i class="bi bi-star-fill me-1"></i>
+                            Carro Novo
+                        </h6>
+                        <ul class="list-unstyled small">
+                            <li>• Taxa de juros menor</li>
+                            <li>• Prazo até 72 meses</li>
+                            <li>• Garantia de fábrica</li>
+                            <li>• Financiamento até 100%</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h6 class="text-primary">
+                            <i class="bi bi-arrow-clockwise me-1"></i>
+                            Carro Usado
+                        </h6>
+                        <ul class="list-unstyled small">
+                            <li>• Taxa de juros maior</li>
+                            <li>• Prazo até 60 meses</li>
+                            <li>• Financiamento até 90%</li>
+                            <li>• Avaliação obrigatória</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documentation -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-file-text text-warning me-2"></i>
+                        Documentos Necessários
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <h6>Documentos Pessoais:</h6>
+                        <ul class="list-unstyled mb-3">
+                            <li>• RG e CPF</li>
+                            <li>• Comprovante de renda</li>
+                            <li>• Comprovante de residência</li>
+                            <li>• Extratos bancários</li>
+                        </ul>
+                        
+                        <h6>Documentos do Veículo:</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li>• CRLV (Documento do Carro)</li>
+                            <li>• Nota fiscal (carro novo)</li>
+                            <li>• Laudo de avaliação (usado)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interest Rates -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-percent text-danger me-2"></i>
+                        Taxas de Referência
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="small">Carro Novo - Banco</td>
+                                    <td class="small text-end">12-18% a.a.</td>
+                                </tr>
+                                <tr>
+                                    <td class="small">Carro Usado - Banco</td>
+                                    <td class="small text-end">18-25% a.a.</td>
+                                </tr>
+                                <tr>
+                                    <td class="small">Financeira</td>
+                                    <td class="small text-end">20-35% a.a.</td>
+                                </tr>
+                                <tr>
+                                    <td class="small">Consórcio</td>
+                                    <td class="small text-end">0-3% a.a.*</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" class="small text-muted">
+                                        * Taxas de administração
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Calculators -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-link text-primary me-2"></i>
+                        Calculadoras Relacionadas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-page="/Calculadoras/Consorcio" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-people me-1"></i> Consórcio
+                        </a>
+                        <a asp-page="/Calculadoras/SalarioLiquido" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-cash me-1"></i> Salário Líquido
+                        </a>
+                        <a asp-page="/Calculadoras/EmprestimoPessoal" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-credit-card me-1"></i> Empréstimo Pessoal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function formatCurrency(input) {
+            let value = input.value.replace(/\D/g, '');
+            value = (value / 100).toFixed(2);
+            input.value = value.replace('.', ',');
+        }
+
+        function calculateFinancing() {
+            const valorVeiculo = document.getElementById('ValorVeiculo');
+            const valorEntrada = document.getElementById('ValorEntrada');
+            
+            if (valorVeiculo.value && valorEntrada.value) {
+                const veiculo = parseFloat(valorVeiculo.value.replace(',', '.'));
+                const entrada = parseFloat(valorEntrada.value.replace(',', '.'));
+                
+                if (veiculo > 0 && entrada >= 0) {
+                    const percentage = ((entrada / veiculo) * 100).toFixed(1);
+                    
+                    // Update percentage display
+                    const entradaField = document.querySelector('label[for="ValorEntrada"]').parentNode;
+                    let percentageTip = entradaField.querySelector('.percentage-tip');
+                    
+                    if (!percentageTip) {
+                        percentageTip = document.createElement('small');
+                        percentageTip.className = 'form-text text-info percentage-tip';
+                        entradaField.appendChild(percentageTip);
+                    }
+                    
+                    percentageTip.innerHTML = `<i class="bi bi-info-circle me-1"></i>${percentage}% do valor do veículo`;
+                    
+                    // Color code the percentage
+                    if (percentage >= 20) {
+                        percentageTip.className = 'form-text text-success percentage-tip';
+                    } else if (percentage >= 10) {
+                        percentageTip.className = 'form-text text-warning percentage-tip';
+                    } else {
+                        percentageTip.className = 'form-text text-danger percentage-tip';
+                    }
+                }
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('veiculoForm').reset();
+            document.querySelectorAll('.percentage-tip').forEach(el => el.remove());
+            location.reload();
+        }
+
+        // Format initial values
+        document.addEventListener('DOMContentLoaded', function() {
+            const currencyInputs = document.querySelectorAll('#ValorVeiculo, #ValorEntrada');
+            currencyInputs.forEach(input => {
+                if (input.value) {
+                    formatCurrency(input);
+                }
+            });
+            calculateFinancing();
+        });
+    </script>
+}
+
+<!-- SEO Schema -->
+<script type="application/ld+json">
+{
+  "@@context": "https://schema.org",
+  "@@type": "WebApplication",
+  "name": "Simulador de Financiamento de Veículo",
+  "description": "Simule o financiamento do seu carro novo ou usado",
+  "url": "@Context.Request.GetDisplayUrl()",
+  "applicationCategory": "Finance"
+}
+</script>

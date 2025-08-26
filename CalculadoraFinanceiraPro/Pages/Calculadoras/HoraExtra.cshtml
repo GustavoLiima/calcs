@@ -1,0 +1,365 @@
+@page
+@model CalculadoraFinanceiraPro.Pages.Calculadoras.HoraExtraModel
+@{
+    ViewData["Title"] = "Calculadora de Hora Extra";
+    ViewData["Description"] = "Calcule suas horas extras, adicional noturno e valores de DSR. Ferramenta completa para trabalhadores CLT.";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="calculator-card">
+                <div class="calculator-header">
+                    <i class="fas fa-clock"></i>
+                    <div>
+                        <h1>Calculadora de Hora Extra</h1>
+                        <p>Calcule suas horas extras, adicional noturno e DSR com precisão</p>
+                    </div>
+                </div>
+
+                <form method="post" id="hora-extra-form">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Salário Base (R$)</label>
+                            <input type="text" class="form-control money-input" asp-for="SalarioBase" 
+                                   placeholder="Ex: 2.500,00" required>
+                            <span asp-validation-for="SalarioBase" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Jornada Semanal (horas)</label>
+                            <select class="form-select" asp-for="JornadaSemanal" required>
+                                <option value="">Selecione a jornada</option>
+                                <option value="40">40 horas</option>
+                                <option value="44">44 horas</option>
+                                <option value="36">36 horas (6x1)</option>
+                                <option value="48">48 horas (com compensação)</option>
+                            </select>
+                            <span asp-validation-for="JornadaSemanal" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Horas Extras 50%</label>
+                            <input type="number" class="form-control" asp-for="HorasExtras50" 
+                                   min="0" max="200" step="0.5" placeholder="Ex: 20">
+                            <div class="form-text">
+                                <small>Horas extras normais (50% de adicional)</small>
+                            </div>
+                            <span asp-validation-for="HorasExtras50" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Horas Extras 100%</label>
+                            <input type="number" class="form-control" asp-for="HorasExtras100" 
+                                   min="0" max="200" step="0.5" placeholder="Ex: 10">
+                            <div class="form-text">
+                                <small>Domingos e feriados (100% de adicional)</small>
+                            </div>
+                            <span asp-validation-for="HorasExtras100" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Horas Noturnas</label>
+                            <input type="number" class="form-control" asp-for="HorasNoturnas" 
+                                   min="0" max="300" step="0.5" placeholder="Ex: 40">
+                            <div class="form-text">
+                                <small>Das 22h às 5h (adicional de 20%)</small>
+                            </div>
+                            <span asp-validation-for="HorasNoturnas" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">DSR sobre Horas Extras</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" asp-for="CalcularDSR" checked>
+                                <label class="form-check-label">
+                                    Incluir DSR (Descanso Semanal Remunerado)
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                <small>DSR obrigatório sobre horas extras habituais</small>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-calculate">
+                                <i class="fas fa-calculator"></i>
+                                Calcular Horas Extras
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                @if (Model.CalculoRealizado)
+                {
+                    <div class="results-section mt-4">
+                        <h3><i class="fas fa-chart-line text-success"></i> Resultados do Cálculo</h3>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-clock text-primary"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Valor Hora Normal</div>
+                                        <div class="result-value">@Model.ValorHoraNormal.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-plus-circle text-success"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Total Horas Extras 50%</div>
+                                        <div class="result-value">@Model.ValorHorasExtras50.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-star text-warning"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Total Horas Extras 100%</div>
+                                        <div class="result-value">@Model.ValorHorasExtras100.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="result-card">
+                                    <div class="result-icon">
+                                        <i class="fas fa-moon text-info"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Adicional Noturno</div>
+                                        <div class="result-value">@Model.ValorAdicionalNoturno.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (Model.CalcularDSR)
+                            {
+                                <div class="col-md-6">
+                                    <div class="result-card">
+                                        <div class="result-icon">
+                                            <i class="fas fa-calendar-check text-secondary"></i>
+                                        </div>
+                                        <div class="result-content">
+                                            <div class="result-label">DSR sobre Extras</div>
+                                            <div class="result-value">@Model.ValorDSR.ToString("C")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <div class="col-md-6">
+                                <div class="result-card highlight">
+                                    <div class="result-icon">
+                                        <i class="fas fa-money-bill-wave text-success"></i>
+                                    </div>
+                                    <div class="result-content">
+                                        <div class="result-label">Total Adicional</div>
+                                        <div class="result-value text-success">@Model.TotalAdicional.ToString("C")</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="summary-card">
+                                    <h5>Resumo dos Cálculos</h5>
+                                    <div class="summary-grid">
+                                        <div class="summary-item">
+                                            <span>Salário Base:</span>
+                                            <strong>@Model.SalarioBase.ToString("C")</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Jornada Semanal:</span>
+                                            <strong>@Model.JornadaSemanal horas</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Valor da Hora:</span>
+                                            <strong>@Model.ValorHoraNormal.ToString("C")</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Horas Extras 50%:</span>
+                                            <strong>@Model.HorasExtras50 horas</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Horas Extras 100%:</span>
+                                            <strong>@Model.HorasExtras100 horas</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Horas Noturnas:</span>
+                                            <strong>@Model.HorasNoturnas horas</strong>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span>Salário Final:</span>
+                                            <strong class="text-success">@((Model.SalarioBase + Model.TotalAdicional).ToString("C"))</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="sidebar">
+                <div class="info-card">
+                    <h4><i class="fas fa-info-circle text-info"></i> Tipos de Hora Extra</h4>
+                    <ul>
+                        <li><strong>50%:</strong> Dias normais da semana</li>
+                        <li><strong>100%:</strong> Domingos e feriados</li>
+                        <li><strong>Noturno:</strong> 22h às 5h (+20%)</li>
+                        <li><strong>DSR:</strong> Sobre extras habituais</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4><i class="fas fa-clock text-warning"></i> Jornadas de Trabalho</h4>
+                    <div class="rate-comparison">
+                        <div class="rate-item">
+                            <span>Segunda a Sexta</span>
+                            <strong>8h/dia (40h/sem)</strong>
+                        </div>
+                        <div class="rate-item">
+                            <span>Com Sábado</span>
+                            <strong>44h/semana</strong>
+                        </div>
+                        <div class="rate-item">
+                            <span>Escala 6x1</span>
+                            <strong>36h/semana</strong>
+                        </div>
+                        <div class="rate-item">
+                            <span>Com Compensação</span>
+                            <strong>até 48h/semana</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h4><i class="fas fa-gavel text-danger"></i> Direitos Trabalhistas</h4>
+                    <ul>
+                        <li>Máximo 2h extras por dia</li>
+                        <li>DSR obrigatório se habitual</li>
+                        <li>Hora noturna = 52min30s</li>
+                        <li>Acordo individual ou coletivo</li>
+                        <li>Banco de horas permitido</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4><i class="fas fa-lightbulb text-warning"></i> Dicas Importantes</h4>
+                    <ul>
+                        <li>Mantenha controle das horas trabalhadas</li>
+                        <li>Verifique se há banco de horas</li>
+                        <li>DSR incide sobre extras habituais</li>
+                        <li>Hora noturna tem cálculo diferenciado</li>
+                        <li>Consulte seu sindicato sobre acordos</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Formatação de moeda
+    const moneyInputs = document.querySelectorAll('.money-input');
+    moneyInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = (value / 100).toFixed(2) + '';
+            value = value.replace(".", ",");
+            value = value.replace(/(\d)(?=(\d{3})+,)/g, "$1.");
+            e.target.value = value;
+        });
+    });
+
+    // Cálculo dinâmico do valor da hora
+    const salarioInput = document.querySelector('[name="SalarioBase"]');
+    const jornadaSelect = document.querySelector('[name="JornadaSemanal"]');
+    const valorHoraDisplay = document.createElement('div');
+    valorHoraDisplay.className = 'alert alert-info mt-2';
+    valorHoraDisplay.style.display = 'none';
+
+    if (salarioInput && jornadaSelect) {
+        salarioInput.parentNode.appendChild(valorHoraDisplay);
+
+        function updateValorHora() {
+            const salario = parseFloat(salarioInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+            const jornada = parseInt(jornadaSelect.value) || 0;
+            
+            if (salario > 0 && jornada > 0) {
+                const horasMes = jornada * 4.33; // Média de semanas por mês
+                const valorHora = salario / horasMes;
+                valorHoraDisplay.innerHTML = `<i class="fas fa-info-circle"></i> Valor da hora: <strong>${valorHora.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</strong>`;
+                valorHoraDisplay.style.display = 'block';
+            } else {
+                valorHoraDisplay.style.display = 'none';
+            }
+        }
+
+        salarioInput.addEventListener('input', updateValorHora);
+        jornadaSelect.addEventListener('change', updateValorHora);
+    }
+
+    // Validações automáticas
+    const form = document.getElementById('hora-extra-form');
+    const inputs = form.querySelectorAll('input[type="number"]');
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            validateHours();
+        });
+    });
+
+    function validateHours() {
+        const horas50 = parseFloat(document.querySelector('[name="HorasExtras50"]').value) || 0;
+        const horas100 = parseFloat(document.querySelector('[name="HorasExtras100"]').value) || 0;
+        const horasNoturnas = parseFloat(document.querySelector('[name="HorasNoturnas"]').value) || 0;
+        
+        const totalExtras = horas50 + horas100;
+        
+        if (totalExtras > 60) {
+            showAlert('warning', 'Atenção: Mais de 60 horas extras no mês pode indicar jornada excessiva.');
+        }
+        
+        if (horasNoturnas > 100) {
+            showAlert('info', 'Lembre-se: Hora noturna tem duração reduzida (52min30s).');
+        }
+    }
+
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const existingAlert = form.querySelector('.alert:not(.alert-info)');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        form.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 8000);
+    }
+});
+</script>

@@ -1,0 +1,414 @@
+@page "/calculadora/financiamento-imobiliario"
+@model CalculadoraFinanceiraPro.Pages.Calculadoras.FinanciamentoImobiliarioModel
+@{
+    ViewData["Title"] = "Simulador de Financiamento Imobiliário SAC e PRICE 2024";
+    ViewData["Description"] = "Simule seu financiamento imobiliário com os sistemas SAC e PRICE. Compare prestações, juros totais e escolha a melhor opção para comprar sua casa própria.";
+    ViewData["Keywords"] = "simulador financiamento imobiliario, financiamento casa propria, sistema sac price, simulacao financiamento, calculadora imovel";
+}
+
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="/Index">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Financiamento Imobiliário</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Calculator Form -->
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white">
+                    <h1 class="h4 mb-0">
+                        <i class="bi bi-house-door-fill me-2"></i>
+                        Simulador de Financiamento Imobiliário
+                    </h1>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted mb-4">
+                        Compare os sistemas SAC e PRICE para seu financiamento imobiliário. 
+                        Descubra qual sistema oferece a melhor condição para seu perfil.
+                    </p>
+
+                    <form method="post" id="financiamentoForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ValorImovel" class="form-label">
+                                    <i class="bi bi-house text-success me-1"></i>
+                                    Valor do Imóvel (R$)
+                                </label>
+                                <input asp-for="ValorImovel" class="form-control form-control-lg" 
+                                       placeholder="Ex: 300.000,00" step="0.01" min="1000"
+                                       oninput="formatCurrency(this); calculateFinancing();" />
+                                <span asp-validation-for="ValorImovel" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ValorEntrada" class="form-label">
+                                    <i class="bi bi-cash text-warning me-1"></i>
+                                    Valor de Entrada (R$)
+                                </label>
+                                <input asp-for="ValorEntrada" class="form-control form-control-lg" 
+                                       placeholder="Ex: 60.000,00" step="0.01" min="0"
+                                       oninput="formatCurrency(this); calculateFinancing();" />
+                                <span asp-validation-for="ValorEntrada" class="text-danger"></span>
+                                <small class="form-text text-muted">Mínimo recomendado: 20% do valor do imóvel</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TaxaJuros" class="form-label">
+                                    <i class="bi bi-percent text-info me-1"></i>
+                                    Taxa de Juros Anual (%)
+                                </label>
+                                <input asp-for="TaxaJuros" class="form-control form-control-lg" 
+                                       placeholder="Ex: 10,5" step="0.1" min="0.1" max="50"
+                                       onchange="calculateFinancing();" />
+                                <span asp-validation-for="TaxaJuros" class="text-danger"></span>
+                                <small class="form-text text-muted">Taxa média atual: 10,5% a.a.</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PrazoAnos" class="form-label">
+                                    <i class="bi bi-calendar text-primary me-1"></i>
+                                    Prazo (Anos)
+                                </label>
+                                <select asp-for="PrazoAnos" class="form-select form-select-lg" 
+                                        onchange="calculateFinancing();">
+                                    @for (int i = 5; i <= 35; i += 5)
+                                    {
+                                        <option value="@i" selected="@(i == 30)">@i anos</option>
+                                    }
+                                    @for (int i = 10; i <= 35; i++)
+                                    {
+                                        if (i % 5 != 0)
+                                        {
+                                            <option value="@i">@i anos</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="PrazoAnos" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
+                            <button type="submit" class="btn btn-success btn-lg me-md-2">
+                                <i class="bi bi-calculator me-2"></i>
+                                Simular Financiamento
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-lg" 
+                                    onclick="clearForm()">
+                                <i class="bi bi-arrow-clockwise me-2"></i>
+                                Limpar
+                            </button>
+                        </div>
+                    </form>
+
+                    @if (Model.CalculoRealizado)
+                    {
+                        <div class="result-section fade-in">
+                            <h3 class="text-center mb-4">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Simulação de Financiamento
+                            </h3>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="result-item">
+                                        <span class="result-label">Valor do Imóvel</span>
+                                        <span class="result-value text-dark">
+                                            @Model.ValorImovel.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="result-item">
+                                        <span class="result-label">Valor de Entrada</span>
+                                        <span class="result-value text-dark">
+                                            @Model.ValorEntrada.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="result-highlight mb-4">
+                                <div class="result-label">Valor a Financiar</div>
+                                <div class="result-value">@Model.ValorFinanciado.ToString("C", new System.Globalization.CultureInfo("pt-BR"))</div>
+                            </div>
+
+                            <!-- Comparação SAC vs PRICE -->
+                            <div class="row">
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white text-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-graph-down me-2"></i>
+                                                Sistema SAC
+                                            </h5>
+                                            <small>Parcelas Decrescentes</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <strong>Primeira Parcela:</strong>
+                                                <div class="h5 text-primary">
+                                                    @Model.PrestacaoSAC.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="small">
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span>Total de Juros:</span>
+                                                    <span class="text-danger">
+                                                        @Model.TotalJurosSAC.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                                    </span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span><strong>Total Pago:</strong></span>
+                                                    <span class="fw-bold">
+                                                        @Model.ValorTotalSAC.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card border-warning">
+                                        <div class="card-header bg-warning text-dark text-center">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-arrows-horizontal me-2"></i>
+                                                Sistema PRICE
+                                            </h5>
+                                            <small>Parcelas Fixas</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <strong>Parcela Fixa:</strong>
+                                                <div class="h5 text-warning">
+                                                    @Model.PrestacaoPRICE.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="small">
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span>Total de Juros:</span>
+                                                    <span class="text-danger">
+                                                        @Model.TotalJurosPRICE.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                                    </span>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <span><strong>Total Pago:</strong></span>
+                                                    <span class="fw-bold">
+                                                        @Model.ValorTotalPRICE.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Comparativo -->
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-lightbulb me-2"></i>Qual sistema escolher?</h6>
+                                @{
+                                    var economiaTotal = Model.ValorTotalPRICE - Model.ValorTotalSAC;
+                                }
+                                @if (economiaTotal > 0)
+                                {
+                                    <p class="mb-0">
+                                        <strong>Sistema SAC é mais vantajoso:</strong> 
+                                        Economia total de @economiaTotal.ToString("C", new System.Globalization.CultureInfo("pt-BR")) 
+                                        em relação ao PRICE.
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="mb-0">
+                                        <strong>Sistema PRICE é mais vantajoso:</strong> 
+                                        Parcelas fixas facilitam o planejamento financeiro.
+                                    </p>
+                                }
+                            </div>
+
+                            <div class="mt-4 text-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Simulação baseada em @Model.PrazoAnos anos com taxa de @Model.TaxaJuros% a.a.
+                                </small>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Info -->
+        <div class="col-lg-4">
+            <!-- Systems Comparison -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle text-primary me-2"></i>
+                        SAC vs PRICE
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="text-primary">
+                            <i class="bi bi-graph-down me-1"></i>
+                            Sistema SAC
+                        </h6>
+                        <ul class="list-unstyled small">
+                            <li>✓ Parcelas decrescentes</li>
+                            <li>✓ Menor total de juros</li>
+                            <li>✓ Amortização constante</li>
+                            <li>✗ Primeira parcela alta</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h6 class="text-warning">
+                            <i class="bi bi-arrows-horizontal me-1"></i>
+                            Sistema PRICE
+                        </h6>
+                        <ul class="list-unstyled small">
+                            <li>✓ Parcelas fixas</li>
+                            <li>✓ Facilita planejamento</li>
+                            <li>✓ Parcela inicial menor</li>
+                            <li>✗ Maior total de juros</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb text-warning me-2"></i>
+                        Dicas Importantes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <div class="mb-3">
+                            <i class="bi bi-check-circle text-success me-1"></i>
+                            <strong>Entrada mínima:</strong> 20% do valor do imóvel
+                        </div>
+                        <div class="mb-3">
+                            <i class="bi bi-check-circle text-success me-1"></i>
+                            <strong>Renda familiar:</strong> Parcela não pode exceder 30% da renda
+                        </div>
+                        <div class="mb-3">
+                            <i class="bi bi-check-circle text-success me-1"></i>
+                            <strong>Nome limpo:</strong> Essencial para aprovação
+                        </div>
+                        <div class="mb-0">
+                            <i class="bi bi-check-circle text-success me-1"></i>
+                            <strong>Compare bancos:</strong> Taxas podem variar 2-3% a.a.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Calculators -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-link text-primary me-2"></i>
+                        Calculadoras Relacionadas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-page="/Calculadoras/QuantoFinanciar" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-calculator me-1"></i> Quanto Posso Financiar
+                        </a>
+                        <a asp-page="/Calculadoras/SalarioLiquido" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-cash me-1"></i> Salário Líquido
+                        </a>
+                        <a asp-page="/Calculadoras/JurosCompostos" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-graph-up me-1"></i> Juros Compostos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function formatCurrency(input) {
+            let value = input.value.replace(/\D/g, '');
+            value = (value / 100).toFixed(2);
+            input.value = value.replace('.', ',');
+        }
+
+        function calculateFinancing() {
+            const valorImovel = document.getElementById('ValorImovel');
+            const valorEntrada = document.getElementById('ValorEntrada');
+            
+            if (valorImovel.value && parseFloat(valorImovel.value.replace(',', '.')) > 1000) {
+                // Auto-calculate percentage if entrada is modified
+                if (valorEntrada.value) {
+                    const imovel = parseFloat(valorImovel.value.replace(',', '.'));
+                    const entrada = parseFloat(valorEntrada.value.replace(',', '.'));
+                    const percentage = ((entrada / imovel) * 100).toFixed(1);
+                    
+                    // Show percentage tip
+                    const entradaField = document.querySelector('label[for="ValorEntrada"]');
+                    if (percentage > 0) {
+                        const small = entradaField.parentNode.querySelector('.percentage-tip');
+                        if (!small) {
+                            const tip = document.createElement('small');
+                            tip.className = 'form-text text-info percentage-tip';
+                            tip.innerHTML = `<i class="bi bi-info-circle me-1"></i>${percentage}% do valor do imóvel`;
+                            entradaField.parentNode.appendChild(tip);
+                        } else {
+                            small.innerHTML = `<i class="bi bi-info-circle me-1"></i>${percentage}% do valor do imóvel`;
+                        }
+                    }
+                }
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('financiamentoForm').reset();
+            // Remove percentage tips
+            document.querySelectorAll('.percentage-tip').forEach(el => el.remove());
+            location.reload();
+        }
+
+        // Format initial values if they exist
+        document.addEventListener('DOMContentLoaded', function() {
+            const currencyInputs = document.querySelectorAll('#ValorImovel, #ValorEntrada');
+            currencyInputs.forEach(input => {
+                if (input.value) {
+                    formatCurrency(input);
+                }
+            });
+        });
+    </script>
+}
+
+<!-- SEO Schema -->
+<script type="application/ld+json">
+{
+  "@@context": "https://schema.org",
+  "@@type": "WebApplication",
+  "name": "Simulador de Financiamento Imobiliário",
+  "description": "Simule seu financiamento imobiliário com os sistemas SAC e PRICE",
+  "url": "@Context.Request.GetDisplayUrl()",
+  "applicationCategory": "Finance",
+  "operatingSystem": "Web",
+  "offers": {
+    "@@type": "Offer",
+    "price": "0",
+    "priceCurrency": "BRL"
+  }
+}
+</script>
